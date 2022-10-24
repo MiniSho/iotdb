@@ -51,6 +51,7 @@ import org.apache.iotdb.confignode.consensus.request.write.UpdateProcedurePlan;
 import org.apache.iotdb.confignode.consensus.request.write.UpdateRegionLocationPlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.ApplyConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.RemoveConfigNodePlan;
+import org.apache.iotdb.confignode.consensus.request.write.confignode.UpdateConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.partition.CreateDataPartitionPlan;
 import org.apache.iotdb.confignode.consensus.request.write.partition.CreateSchemaPartitionPlan;
 import org.apache.iotdb.confignode.consensus.request.write.region.CreateRegionGroupsPlan;
@@ -266,6 +267,8 @@ public class ConfigPlanExecutor {
         return nodeInfo.applyConfigNode((ApplyConfigNodePlan) physicalPlan);
       case RemoveConfigNode:
         return nodeInfo.removeConfigNode((RemoveConfigNodePlan) physicalPlan);
+      case UpdateConfigNode:
+        return nodeInfo.updateConfigNode((UpdateConfigNodePlan) physicalPlan);
       case CreateFunction:
         return udfInfo.createFunction((CreateFunctionPlan) physicalPlan);
       case DropFunction:

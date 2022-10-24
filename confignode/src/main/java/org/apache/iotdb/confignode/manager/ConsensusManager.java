@@ -245,6 +245,22 @@ public class ConsensusManager {
         .isSuccess();
   }
 
+  public boolean updateConfigNodePeer(
+      TConfigNodeLocation oldConfigNodeLocation, TConfigNodeLocation newConfigNodeLocation) {
+    return consensusImpl
+        .updatePeer(
+            consensusGroupId,
+            new Peer(
+                consensusGroupId,
+                oldConfigNodeLocation.getConfigNodeId(),
+                oldConfigNodeLocation.getConsensusEndPoint()),
+            new Peer(
+                consensusGroupId,
+                newConfigNodeLocation.getConfigNodeId(),
+                newConfigNodeLocation.getConsensusEndPoint()))
+        .isSuccess();
+  }
+
   /** Transmit PhysicalPlan to confignode.consensus.statemachine */
   public ConsensusWriteResponse write(ConfigPhysicalPlan plan) {
     return consensusImpl.write(consensusGroupId, plan);

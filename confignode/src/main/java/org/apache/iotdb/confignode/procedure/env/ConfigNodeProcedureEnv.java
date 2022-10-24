@@ -94,13 +94,13 @@ public class ConfigNodeProcedureEnv {
 
   private final DataNodeRemoveHandler dataNodeRemoveHandler;
 
-  private final ReentrantLock removeConfigNodeLock;
+  private final ReentrantLock operateConfigNodeLock;
 
   public ConfigNodeProcedureEnv(ConfigManager configManager, ProcedureScheduler scheduler) {
     this.configManager = configManager;
     this.scheduler = scheduler;
     this.dataNodeRemoveHandler = new DataNodeRemoveHandler(configManager);
-    this.removeConfigNodeLock = new ReentrantLock();
+    this.operateConfigNodeLock = new ReentrantLock();
   }
 
   public ConfigManager getConfigManager() {
@@ -202,6 +202,29 @@ public class ConfigNodeProcedureEnv {
     configManager.getConsensusManager().addConfigNodePeer(configNodeLocation);
   }
 
+  public void updateConfigNodePeer(
+      TConfigNodeLocation oldConfigNodeLocation, TConfigNodeLocation newConfigNodeLocation)
+      throws ProcedureException {
+    operateConfigNodeLock.tryLock();
+    TSStatus tsStatus;
+    try {
+      if (getConsensusManager()
+          .updateConfigNodePeer(oldConfigNodeLocation, newConfigNodeLocation)) {
+        tsStatus = new TSStatus(TSStatusCode.SUCCESS_STATUS.getStatusCode());
+      } else {
+        tsStatus =
+            new TSStatus(TSStatusCode.UPDATE_CONFIGNODE_FAILED.getStatusCode())
+                .setMessage(
+                    "Update ConfigNode failed because update ConsensusGroup peer information failed.");
+      }
+      if (tsStatus.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        throw new ProcedureException(tsStatus.getMessage());
+      }
+    } finally {
+      operateConfigNodeLock.unlock();
+    }
+  }
+
   /**
    * Remove peer in Leader node
    *
@@ -210,7 +233,7 @@ public class ConfigNodeProcedureEnv {
    */
   public void removeConfigNodePeer(TConfigNodeLocation tConfigNodeLocation)
       throws ProcedureException {
-    removeConfigNodeLock.tryLock();
+    operateConfigNodeLock.tryLock();
     TSStatus tsStatus;
     try {
       // Execute removePeer
@@ -227,7 +250,7 @@ public class ConfigNodeProcedureEnv {
         throw new ProcedureException(tsStatus.getMessage());
       }
     } finally {
-      removeConfigNodeLock.unlock();
+      operateConfigNodeLock.unlock();
     }
   }
 

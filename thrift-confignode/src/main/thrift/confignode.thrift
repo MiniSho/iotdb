@@ -297,6 +297,15 @@ struct TConfigNodeRegisterResp {
   2: required i32 configNodeId
 }
 
+struct TConfigNodeUpdateReq{
+1: required common.TConfigNodeLocation oldConfigNodeLocation
+2: required common.TConfigNodeLocation newConfigNodeLocation
+}
+
+struct TConfigNodeUpdateResp {
+  1: required common.TSStatus status
+}
+
 struct TAddConsensusGroupReq {
   1: required list<common.TConfigNodeLocation> configNodeList
 }
@@ -716,6 +725,15 @@ service IConfigNodeRPCService {
    *                             are inconsist with the ConfigNode-leader
    */
   TConfigNodeRegisterResp registerConfigNode(TConfigNodeRegisterReq req)
+
+  /**
+   * The Non-Seed-ConfigNode submit a update request to the ConfigNode-leader if the configuration has changed when restart
+   *
+   * @return SUCCESS_STATUS if the UpdateConfigNodeProcedure submitted successfully
+   *         ERROR_GLOBAL_CONFIG if some global configurations in the Non-Seed-ConfigNode
+   *                             are inconsist with the ConfigNode-leader
+   */
+  TConfigNodeUpdateResp updateConfigNode(TConfigNodeUpdateReq req)
 
   /** The ConfigNode-leader will guide the Non-Seed-ConfigNode to join the ConsensusGroup when first startup */
   common.TSStatus addConsensusGroup(TAddConsensusGroupReq req)

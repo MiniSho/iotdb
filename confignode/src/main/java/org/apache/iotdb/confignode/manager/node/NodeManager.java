@@ -48,6 +48,7 @@ import org.apache.iotdb.confignode.consensus.request.write.RegisterDataNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.RemoveDataNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.ApplyConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.RemoveConfigNodePlan;
+import org.apache.iotdb.confignode.consensus.request.write.confignode.UpdateConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.response.DataNodeConfigurationResp;
 import org.apache.iotdb.confignode.consensus.response.DataNodeRegisterResp;
 import org.apache.iotdb.confignode.consensus.response.DataNodeToStatusResp;
@@ -63,6 +64,7 @@ import org.apache.iotdb.confignode.procedure.env.DataNodeRemoveHandler;
 import org.apache.iotdb.confignode.rpc.thrift.TConfigNodeInfo;
 import org.apache.iotdb.confignode.rpc.thrift.TConfigNodeRegisterReq;
 import org.apache.iotdb.confignode.rpc.thrift.TConfigNodeRegisterResp;
+import org.apache.iotdb.confignode.rpc.thrift.TConfigNodeUpdateResp;
 import org.apache.iotdb.confignode.rpc.thrift.TDataNodeInfo;
 import org.apache.iotdb.confignode.rpc.thrift.TGlobalConfig;
 import org.apache.iotdb.confignode.rpc.thrift.TRatisConfig;
@@ -244,7 +246,7 @@ public class NodeManager {
    * Remove DataNodes
    *
    * @param removeDataNodePlan RemoveDataNodeReq
-   * @return DataNodeToStatusResp, The TSStatue will be SUCCEED_STATUS when request is accept,
+   * @return DataNodeToStatusResp, The TSStatus will be SUCCEED_STATUS when request is accept,
    *     DATANODE_NOT_EXIST when some datanode not exist.
    */
   public DataSet removeDataNode(RemoveDataNodePlan removeDataNodePlan) {
@@ -288,6 +290,14 @@ public class NodeManager {
     return dataSet;
   }
 
+  /**
+   * Register ConfigNode
+   *
+   * @param req TConfigNodeRegisterReq
+   * @return TConfigNodeRegisterResp, The TSStatus will be SUCCEED_STATUS when request is accept,
+   *     ERROR_GLOBAL_CONFIG when some global configurations in the Non-Seed-ConfigNode are
+   *     inconsist with the ConfigNode-leader.
+   */
   public TConfigNodeRegisterResp registerConfigNode(TConfigNodeRegisterReq req) {
     // Check global configuration
     TSStatus status = configManager.getConsensusManager().confirmLeader();
@@ -308,6 +318,28 @@ public class NodeManager {
     }
 
     return new TConfigNodeRegisterResp().setStatus(status).setConfigNodeId(ERROR_STATUS_NODE_ID);
+  }
+
+  public TConfigNodeUpdateResp updateConfigNode(UpdateConfigNodePlan req) {
+    TSStatus status = configManager.getConsensusManager().confirmLeader();
+
+    if (status.getCode() == TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+      // check if the config node is exist
+      List<TConfigNodeLocation> configNodeLocationList =
+          configManager.getNodeManager().getRegisteredConfigNodes();
+      for (TConfigNodeLocation configNodeLocation : configNodeLocationList) {
+        if (configNodeLocation.getConfigNodeId()
+            == req.getOldConfigNodeLocation().getConfigNodeId()) {
+          // submit the update request
+          configManager.getProcedureManager().updateConfigNode(req);
+          return new TConfigNodeUpdateResp().setStatus(StatusUtils.OK);
+        }
+      }
+      return new TConfigNodeUpdateResp()
+          .setStatus(new TSStatus(TSStatusCode.CONFIGNODE_NOT_EXIST.getStatusCode()));
+    }
+
+    return new TConfigNodeUpdateResp().setStatus(status);
   }
 
   /**

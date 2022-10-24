@@ -50,6 +50,7 @@ import org.apache.iotdb.confignode.consensus.request.write.UpdateProcedurePlan;
 import org.apache.iotdb.confignode.consensus.request.write.UpdateRegionLocationPlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.ApplyConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.RemoveConfigNodePlan;
+import org.apache.iotdb.confignode.consensus.request.write.confignode.UpdateConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.partition.CreateDataPartitionPlan;
 import org.apache.iotdb.confignode.consensus.request.write.partition.CreateSchemaPartitionPlan;
 import org.apache.iotdb.confignode.consensus.request.write.region.CreateRegionGroupsPlan;
@@ -225,6 +226,8 @@ public abstract class ConfigPhysicalPlan implements IConsensusRequest {
           break;
         case RemoveConfigNode:
           req = new RemoveConfigNodePlan();
+        case UpdateConfigNode:
+          req = new UpdateConfigNodePlan();
           break;
         case CreateFunction:
           req = new CreateFunctionPlan();

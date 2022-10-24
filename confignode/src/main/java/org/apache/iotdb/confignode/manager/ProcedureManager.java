@@ -30,6 +30,7 @@ import org.apache.iotdb.confignode.conf.ConfigNodeConfig;
 import org.apache.iotdb.confignode.conf.ConfigNodeDescriptor;
 import org.apache.iotdb.confignode.consensus.request.write.RemoveDataNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.RemoveConfigNodePlan;
+import org.apache.iotdb.confignode.consensus.request.write.confignode.UpdateConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.region.CreateRegionGroupsPlan;
 import org.apache.iotdb.confignode.manager.partition.PartitionManager;
 import org.apache.iotdb.confignode.persistence.ProcedureInfo;
@@ -41,6 +42,7 @@ import org.apache.iotdb.confignode.procedure.impl.DropTriggerProcedure;
 import org.apache.iotdb.confignode.procedure.impl.node.AddConfigNodeProcedure;
 import org.apache.iotdb.confignode.procedure.impl.node.RemoveConfigNodeProcedure;
 import org.apache.iotdb.confignode.procedure.impl.node.RemoveDataNodeProcedure;
+import org.apache.iotdb.confignode.procedure.impl.node.UpdateConfigNodeProcedure;
 import org.apache.iotdb.confignode.procedure.impl.statemachine.CreateRegionGroupsProcedure;
 import org.apache.iotdb.confignode.procedure.impl.statemachine.DeleteStorageGroupProcedure;
 import org.apache.iotdb.confignode.procedure.impl.statemachine.DeleteTimeSeriesProcedure;
@@ -190,6 +192,18 @@ public class ProcedureManager {
     AddConfigNodeProcedure addConfigNodeProcedure =
         new AddConfigNodeProcedure(req.getConfigNodeLocation());
     this.executor.submitProcedure(addConfigNodeProcedure);
+    LOGGER.info("Submit AddConfigNodeProcedure successfully: {}", req);
+  }
+
+  /**
+   * Generate a UpdateConfigNodeProcedure, and serially execute all the UpdateConfigNodeProcedure
+   */
+  public void updateConfigNode(UpdateConfigNodePlan req) {
+    UpdateConfigNodeProcedure updateConfigNodeProcedure =
+        new UpdateConfigNodeProcedure(
+            req.getOldConfigNodeLocation(), req.getNewConfigNodeLocation());
+    this.executor.submitProcedure(updateConfigNodeProcedure);
+    LOGGER.info("Submit UpdateConfigNodeProcedure successfully: {}", req);
   }
 
   /**

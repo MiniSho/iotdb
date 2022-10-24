@@ -48,6 +48,7 @@ import org.apache.iotdb.confignode.consensus.request.read.GetTimeSlotListPlan;
 import org.apache.iotdb.confignode.consensus.request.write.RegisterDataNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.RemoveDataNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.RemoveConfigNodePlan;
+import org.apache.iotdb.confignode.consensus.request.write.confignode.UpdateConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.storagegroup.SetDataReplicationFactorPlan;
 import org.apache.iotdb.confignode.consensus.request.write.storagegroup.SetSchemaReplicationFactorPlan;
 import org.apache.iotdb.confignode.consensus.request.write.storagegroup.SetStorageGroupPlan;
@@ -72,6 +73,8 @@ import org.apache.iotdb.confignode.rpc.thrift.TAuthorizerResp;
 import org.apache.iotdb.confignode.rpc.thrift.TCheckUserPrivilegesReq;
 import org.apache.iotdb.confignode.rpc.thrift.TConfigNodeRegisterReq;
 import org.apache.iotdb.confignode.rpc.thrift.TConfigNodeRegisterResp;
+import org.apache.iotdb.confignode.rpc.thrift.TConfigNodeUpdateReq;
+import org.apache.iotdb.confignode.rpc.thrift.TConfigNodeUpdateResp;
 import org.apache.iotdb.confignode.rpc.thrift.TCountStorageGroupResp;
 import org.apache.iotdb.confignode.rpc.thrift.TCreateFunctionReq;
 import org.apache.iotdb.confignode.rpc.thrift.TCreateSchemaTemplateReq;
@@ -432,6 +435,16 @@ public class ConfigNodeRPCServiceProcessor implements IConfigNodeRPCService.Ifac
     LOGGER.info(
         "{} has successfully started and joined the cluster.", ConfigNodeConstant.GLOBAL_NAME);
     return StatusUtils.OK;
+  }
+
+  @Override
+  public TConfigNodeUpdateResp updateConfigNode(TConfigNodeUpdateReq req) {
+    UpdateConfigNodePlan updateConfigNodePlan = new UpdateConfigNodePlan(req);
+    TConfigNodeUpdateResp resp = configManager.updateConfigNode(updateConfigNodePlan);
+    // Print log to record the ConfigNode that performs the UpdateConfigNodeRequest
+    LOGGER.info("Execute UpdateConfigNodeRequest {} with result {}", req, resp);
+
+    return resp;
   }
 
   /** For leader to remove ConfigNode configuration in consensus layer */

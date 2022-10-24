@@ -31,6 +31,7 @@ import org.apache.iotdb.confignode.consensus.request.write.RegisterDataNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.RemoveDataNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.ApplyConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.request.write.confignode.RemoveConfigNodePlan;
+import org.apache.iotdb.confignode.consensus.request.write.confignode.UpdateConfigNodePlan;
 import org.apache.iotdb.confignode.consensus.response.DataNodeConfigurationResp;
 import org.apache.iotdb.rpc.TSStatusCode;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
@@ -315,6 +316,35 @@ public class NodeInfo implements SnapshotProcessor {
       status.setCode(TSStatusCode.APPLY_CONFIGNODE_FAILED.getStatusCode());
       status.setMessage(
           "Apply new ConfigNode failed because current ConfigNode can't store ConfigNode information.");
+    } finally {
+      configNodeInfoReadWriteLock.writeLock().unlock();
+    }
+    return status;
+  }
+
+  /**
+   * Update ConfigNodeList both in memory and confignode-system.properties file
+   *
+   * @param updateConfigNodePlan UpdateConfigNodePlan
+   * @return UPDATE_CONFIGNODE_FAILED if update online ConfigNode failed.
+   */
+  public TSStatus updateConfigNode(UpdateConfigNodePlan updateConfigNodePlan) {
+    TSStatus status = new TSStatus();
+    configNodeInfoReadWriteLock.writeLock().lock();
+    try {
+      registeredConfigNodes.remove(updateConfigNodePlan.getOldConfigNodeLocation());
+      registeredConfigNodes.add(updateConfigNodePlan.getNewConfigNodeLocation());
+      SystemPropertiesUtils.storeConfigNodeList(new ArrayList<>(registeredConfigNodes));
+      LOGGER.info(
+          "Successfully update ConfigNode: {}. Current ConfigNodeGroup: {}",
+          updateConfigNodePlan.getNewConfigNodeLocation(),
+          registeredConfigNodes);
+      status.setCode(TSStatusCode.SUCCESS_STATUS.getStatusCode());
+    } catch (IOException e) {
+      LOGGER.error("Update online ConfigNode failed.", e);
+      status.setCode(TSStatusCode.UPDATE_CONFIGNODE_FAILED.getStatusCode());
+      status.setMessage(
+          "Update ConfigNode failed because current ConfigNode can't store ConfigNode information.");
     } finally {
       configNodeInfoReadWriteLock.writeLock().unlock();
     }

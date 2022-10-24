@@ -62,6 +62,7 @@ public enum ConfigPhysicalPlanType {
   @Deprecated
   ListRoleUsers,
   ApplyConfigNode,
+  UpdateConfigNode,
   RemoveDataNode,
   RemoveConfigNode,
   CreateFunction,
