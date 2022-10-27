@@ -175,11 +175,6 @@ public class IoTDBConfig {
   /** Write mode of wal */
   private volatile WALMode walMode = WALMode.ASYNC;
 
-  /** WAL directories */
-  private String[] walDirs = {
-    IoTDBConstant.DEFAULT_BASE_DIR + File.separator + IoTDBConstant.WAL_FOLDER_NAME
-  };
-
   /** Max number of wal nodes, each node corresponds to one wal directory */
   private int maxWalNodesNum = 0;
 
@@ -2123,7 +2118,7 @@ public class IoTDBConfig {
     this.watermarkBitString = watermarkBitString;
   }
 
-  String getWatermarkMethod() {
+  public String getWatermarkMethod() {
     return this.watermarkMethod;
   }
 
