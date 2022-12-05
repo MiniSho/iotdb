@@ -93,7 +93,7 @@ import static org.apache.iotdb.commons.conf.IoTDBConstant.MAX_DATABASE_NAME_LENG
 
 /** The ClusterSchemaManager Manages cluster schema read and write requests. */
 public class ClusterSchemaManager {
-
+  int teest;
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterSchemaManager.class);
 
   private static final ConfigNodeConfig CONF = ConfigNodeDescriptor.getInstance().getConf();
