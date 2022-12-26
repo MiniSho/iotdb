@@ -54,6 +54,7 @@ import org.apache.iotdb.confignode.consensus.response.DataNodeToStatusResp;
 import org.apache.iotdb.confignode.manager.ClusterSchemaManager;
 import org.apache.iotdb.confignode.manager.ConfigManager;
 import org.apache.iotdb.confignode.manager.ConsensusManager;
+import org.apache.iotdb.confignode.manager.FailedTasksRetryThread;
 import org.apache.iotdb.confignode.manager.IManager;
 import org.apache.iotdb.confignode.manager.TriggerManager;
 import org.apache.iotdb.confignode.manager.UDFManager;
@@ -133,6 +134,7 @@ public class NodeManager {
     this.removeConfigNodeLock = new ReentrantLock();
     this.nodeCacheMap = new ConcurrentHashMap<>();
     this.random = new Random(System.currentTimeMillis());
+    this.failedMissionRetryThread = new FailedTasksRetryThread(configManager);
   }
 
   /**
@@ -951,6 +953,10 @@ public class NodeManager {
                 nodeCacheMap.put(
                     dataNodeConfiguration.getLocation().getDataNodeId(),
                     new DataNodeHeartbeatCache()));
+  }
+
+  public FailedTasksRetryThread getFailedMissionRetryThread() {
+    return failedMissionRetryThread;
   }
 
   private ConsensusManager getConsensusManager() {
