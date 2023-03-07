@@ -160,6 +160,11 @@ createPipePlugin
     : CREATE PIPEPLUGIN pluginName=identifier AS className=STRING_LITERAL uriClause
     ;
 
+// Create Pipe Plugin
+createPipePlugin
+    : CREATE PIPEPLUGIN pluginName=identifier AS className=STRING_LITERAL uriClause
+    ;
+
 // Create Continuous Query
 createContinuousQuery
     : CREATE (CONTINUOUS QUERY | CQ) cqId=identifier

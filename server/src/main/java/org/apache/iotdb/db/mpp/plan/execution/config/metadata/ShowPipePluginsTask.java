@@ -19,10 +19,9 @@
 
 package org.apache.iotdb.db.mpp.plan.execution.config.metadata;
 
-import org.apache.iotdb.commons.pipe.PipePluginInformation;
+import org.apache.iotdb.commons.pipe.plugin.meta.PipePluginMeta;
 import org.apache.iotdb.db.mpp.common.header.ColumnHeader;
 import org.apache.iotdb.db.mpp.common.header.ColumnHeaderConstant;
-import org.apache.iotdb.db.mpp.common.header.DatasetHeader;
 import org.apache.iotdb.db.mpp.common.header.DatasetHeaderFactory;
 import org.apache.iotdb.db.mpp.plan.execution.config.ConfigTaskResult;
 import org.apache.iotdb.db.mpp.plan.execution.config.IConfigTask;
@@ -51,34 +50,31 @@ public class ShowPipePluginsTask implements IConfigTask {
 
   public static void buildTsBlock(
       List<ByteBuffer> allPipePluginsInformation, SettableFuture<ConfigTaskResult> future) {
-    List<TSDataType> outputDataTypes =
+    final List<PipePluginMeta> pipePluginMetaList = new ArrayList<>();
+    if (allPipePluginsInformation != null) {
+      for (final ByteBuffer pipePluginInformationByteBuffer : allPipePluginsInformation) {
+        pipePluginMetaList.add(PipePluginMeta.deserialize(pipePluginInformationByteBuffer));
+      }
+    }
+    pipePluginMetaList.sort(Comparator.comparing(PipePluginMeta::getPluginName));
+
+    final List<TSDataType> outputDataTypes =
         ColumnHeaderConstant.showPipePluginsColumnHeaders.stream()
             .map(ColumnHeader::getColumnType)
             .collect(Collectors.toList());
-    TsBlockBuilder builder = new TsBlockBuilder(outputDataTypes);
-    List<PipePluginInformation> pipePluginInformationList = new ArrayList<>();
-    if (allPipePluginsInformation != null && !allPipePluginsInformation.isEmpty()) {
-      for (ByteBuffer pipePluginInformationByteBuffer : allPipePluginsInformation) {
-        PipePluginInformation pipePluginInformation =
-            PipePluginInformation.deserialize(pipePluginInformationByteBuffer);
-        pipePluginInformationList.add(pipePluginInformation);
-      }
-    }
-
-    pipePluginInformationList.sort(Comparator.comparing(PipePluginInformation::getPluginName));
-
-    for (PipePluginInformation pipePluginInformation : pipePluginInformationList) {
+    final TsBlockBuilder builder = new TsBlockBuilder(outputDataTypes);
+    for (final PipePluginMeta pipePluginMeta : pipePluginMetaList) {
       builder.getTimeColumnBuilder().writeLong(0L);
-      builder
-          .getColumnBuilder(0)
-          .writeBinary(Binary.valueOf(pipePluginInformation.getPluginName()));
-      builder.getColumnBuilder(1).writeBinary(Binary.valueOf(pipePluginInformation.getClassName()));
-      builder
-          .getColumnBuilder(2)
-          .writeBinary(Binary.valueOf(pipePluginInformation.getPluginType()));
+      builder.getColumnBuilder(0).writeBinary(Binary.valueOf(pipePluginMeta.getPluginName()));
+      builder.getColumnBuilder(1).writeBinary(Binary.valueOf(pipePluginMeta.getPluginType()));
+      builder.getColumnBuilder(2).writeBinary(Binary.valueOf(pipePluginMeta.getClassName()));
       builder.declarePosition();
     }
-    DatasetHeader datasetHeader = DatasetHeaderFactory.getShowPipePluginsHeader();
-    future.set(new ConfigTaskResult(TSStatusCode.SUCCESS_STATUS, builder.build(), datasetHeader));
+
+    future.set(
+        new ConfigTaskResult(
+            TSStatusCode.SUCCESS_STATUS,
+            builder.build(),
+            DatasetHeaderFactory.getShowPipePluginsHeader()));
   }
 }
