@@ -58,7 +58,7 @@ public class PipeTsFileHolder {
         createTsFileHardLink(tsFile);
       }
       tsFileReferenceMap
-          .computeIfAbsent(tsFile.getPath(), k -> new AtomicInteger(0))
+          .computeIfAbsent(link.getPath(), k -> new AtomicInteger(0))
           .incrementAndGet();
       return link;
     } catch (IOException e) {
@@ -84,7 +84,7 @@ public class PipeTsFileHolder {
         createTsFileHardLink(tsFile);
       }
       tsFileReferenceMap
-          .computeIfAbsent(tsFile.getPath(), k -> new AtomicInteger(0))
+          .computeIfAbsent(link.getPath(), k -> new AtomicInteger(0))
           .incrementAndGet();
       return link;
     } catch (IOException e) {
@@ -96,9 +96,11 @@ public class PipeTsFileHolder {
 
   public void decreaseFileReference(File tsFile) {
     try {
-      if (tsFileReferenceMap.get(tsFile.getPath()).decrementAndGet() == 0) {
-        // delete hardlink
-        deleteHardLink(tsFile);
+      if (tsFileReferenceMap.containsKey(tsFile.getPath())) {
+        if (tsFileReferenceMap.get(tsFile.getPath()).decrementAndGet() == 0) {
+          // delete hardlink
+          deleteHardLink(tsFile);
+        }
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -181,10 +183,6 @@ public class PipeTsFileHolder {
   }
 
   private void deleteHardLink(File tsFile) throws IOException {
-    if (!getFileHardlink(tsFile).exists()) {
-      return;
-    }
-
     try {
       File tsFileMods = new File(tsFile.getPath() + ModificationFile.FILE_SUFFIX);
       File tsFileResource = new File(tsFile.getPath() + TsFileResource.RESOURCE_SUFFIX);
@@ -203,9 +201,7 @@ public class PipeTsFileHolder {
     }
     return file.getParentFile().getCanonicalPath()
         + File.separator
-        + PipeConstant.PIPE_DIR_NAME
-        + File.separator
-        + PipeConstant.TSFILE_DIR_NAME;
+        + PipeConstant.PIPE_TSFILE_DIR_NAME;
   }
 
   private void createFile(File file) throws IOException {
@@ -219,11 +215,13 @@ public class PipeTsFileHolder {
     return new File(getPipeTsFileDirPath(file), getRelativeFilePath(file));
   }
 
+  public int getFileReferenceCount(File tsFile) {
+    return tsFileReferenceMap.getOrDefault(tsFile.getPath(), new AtomicInteger(0)).get();
+  }
+
   public void clear() {
     for (String dataDir : IoTDBDescriptor.getInstance().getConfig().getDataDirs()) {
-      File pipeTsFileDir =
-          new File(
-              dataDir, PipeConstant.PIPE_DIR_NAME + File.separator + PipeConstant.TSFILE_DIR_NAME);
+      File pipeTsFileDir = new File(dataDir, PipeConstant.PIPE_TSFILE_DIR_NAME);
       if (pipeTsFileDir.exists()) {
         FileUtils.deleteDirectory(pipeTsFileDir);
       }

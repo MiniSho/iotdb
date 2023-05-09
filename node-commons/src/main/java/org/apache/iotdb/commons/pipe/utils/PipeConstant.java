@@ -21,7 +21,5 @@ package org.apache.iotdb.commons.pipe.utils;
 
 public class PipeConstant {
 
-  public static final String PIPE_DIR_NAME = "pipe";
-
-  public static final String TSFILE_DIR_NAME = "tsfile";
+  public static final String PIPE_TSFILE_DIR_NAME = "pipe-tsfile";
 }
