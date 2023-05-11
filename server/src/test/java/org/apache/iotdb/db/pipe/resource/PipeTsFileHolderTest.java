@@ -117,6 +117,12 @@ public class PipeTsFileHolderTest {
     File pipeTsfile2 = pipeTsFileHolder.increaseFileReference(file2, 1);
     Assert.assertEquals(pipeTsFileHolder.getFileReferenceCount(pipeTsfile1), 1);
     Assert.assertEquals(pipeTsFileHolder.getFileReferenceCount(pipeTsfile1), 1);
+
+    pipeTsFileHolder.decreaseFileReference(pipeTsfile1);
+    pipeTsFileHolder.decreaseFileReference(pipeTsfile2);
+    Assert.assertEquals(pipeTsFileHolder.getFileReferenceCount(pipeTsfile1), 0);
+    Assert.assertEquals(pipeTsFileHolder.getFileReferenceCount(pipeTsfile2), 0);
+
     pipeTsFileHolder.decreaseFileReference(pipeTsfile1);
     pipeTsFileHolder.decreaseFileReference(pipeTsfile2);
     Assert.assertEquals(pipeTsFileHolder.getFileReferenceCount(pipeTsfile1), 0);

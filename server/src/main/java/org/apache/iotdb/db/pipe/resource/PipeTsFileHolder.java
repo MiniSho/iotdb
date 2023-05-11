@@ -100,6 +100,7 @@ public class PipeTsFileHolder {
         if (tsFileReferenceMap.get(tsFile.getPath()).decrementAndGet() == 0) {
           // delete hardlink
           deleteHardLink(tsFile);
+          tsFileReferenceMap.remove(tsFile.getPath());
         }
       }
     } catch (IOException e) {
@@ -216,6 +217,7 @@ public class PipeTsFileHolder {
   }
 
   public int getFileReferenceCount(File tsFile) {
+
     return tsFileReferenceMap.getOrDefault(tsFile.getPath(), new AtomicInteger(0)).get();
   }
 
@@ -226,5 +228,7 @@ public class PipeTsFileHolder {
         FileUtils.deleteDirectory(pipeTsFileDir);
       }
     }
+
+    tsFileReferenceMap.clear();
   }
 }
