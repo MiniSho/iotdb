@@ -39,6 +39,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.iotdb.db.storageengine.load.config.LoadTsFileConfigurator.CONVERT_ON_TYPE_MISMATCH_KEY;
+import static org.apache.iotdb.db.storageengine.load.config.LoadTsFileConfigurator.DATABASE_LEVEL_KEY;
+import static org.apache.iotdb.db.storageengine.load.config.LoadTsFileConfigurator.DATABASE_NAME_KEY;
+import static org.apache.iotdb.db.storageengine.load.config.LoadTsFileConfigurator.ON_SUCCESS_DELETE_VALUE;
+import static org.apache.iotdb.db.storageengine.load.config.LoadTsFileConfigurator.ON_SUCCESS_KEY;
+import static org.apache.iotdb.db.storageengine.load.config.LoadTsFileConfigurator.ON_SUCCESS_NONE_VALUE;
+import static org.apache.iotdb.db.storageengine.load.config.LoadTsFileConfigurator.TABLET_CONVERSION_THRESHOLD_KEY;
+
 public class LoadTsFileStatement extends Statement {
 
   private final File file;
@@ -46,6 +54,7 @@ public class LoadTsFileStatement extends Statement {
   private boolean verifySchema = true;
   private boolean deleteAfterLoad = false;
   private boolean convertOnTypeMismatch = true;
+  private long tabletConversionThresholdBytes = -1;
   private boolean autoCreateDatabase = true;
   private boolean isGeneratedByPipe = false;
 
@@ -61,12 +70,15 @@ public class LoadTsFileStatement extends Statement {
     this.verifySchema = true;
     this.deleteAfterLoad = false;
     this.convertOnTypeMismatch = true;
+    this.tabletConversionThresholdBytes =
+        IoTDBDescriptor.getInstance().getConfig().getLoadTabletConversionThresholdBytes();
     this.autoCreateDatabase = IoTDBDescriptor.getInstance().getConfig().isAutoCreateSchemaEnabled();
-    this.resources = new ArrayList<>();
-    this.writePointCountList = new ArrayList<>();
-    this.statementType = StatementType.MULTI_BATCH_INSERT;
 
     this.tsFiles = processTsFile(file);
+    this.resources = new ArrayList<>();
+    this.writePointCountList = new ArrayList<>();
+    this.isTableModel = new ArrayList<>(Collections.nCopies(this.tsFiles.size(), false));
+    this.statementType = StatementType.MULTI_BATCH_INSERT;
   }
 
   public static List<File> processTsFile(final File file) throws FileNotFoundException {
@@ -92,7 +104,10 @@ public class LoadTsFileStatement extends Statement {
     this.verifySchema = true;
     this.deleteAfterLoad = false;
     this.convertOnTypeMismatch = true;
+    this.tabletConversionThresholdBytes =
+        IoTDBDescriptor.getInstance().getConfig().getLoadTabletConversionThresholdBytes();
     this.autoCreateDatabase = IoTDBDescriptor.getInstance().getConfig().isAutoCreateSchemaEnabled();
+
     this.tsFiles = new ArrayList<>();
     this.resources = new ArrayList<>();
     this.writePointCountList = new ArrayList<>();
@@ -145,20 +160,30 @@ public class LoadTsFileStatement extends Statement {
     return verifySchema;
   }
 
-  public void setDeleteAfterLoad(boolean deleteAfterLoad) {
+  public LoadTsFileStatement setDeleteAfterLoad(boolean deleteAfterLoad) {
     this.deleteAfterLoad = deleteAfterLoad;
+    return this;
   }
 
   public boolean isDeleteAfterLoad() {
     return deleteAfterLoad;
   }
 
-  public void setConvertOnTypeMismatch(boolean convertOnTypeMismatch) {
+  public LoadTsFileStatement setConvertOnTypeMismatch(boolean convertOnTypeMismatch) {
     this.convertOnTypeMismatch = convertOnTypeMismatch;
+    return this;
   }
 
   public boolean isConvertOnTypeMismatch() {
     return convertOnTypeMismatch;
+  }
+
+  public void setTabletConversionThresholdBytes(long tabletConversionThresholdBytes) {
+    this.tabletConversionThresholdBytes = tabletConversionThresholdBytes;
+  }
+
+  public long getTabletConversionThresholdBytes() {
+    return tabletConversionThresholdBytes;
   }
 
   public void setAutoCreateDatabase(boolean autoCreateDatabase) {
@@ -207,6 +232,49 @@ public class LoadTsFileStatement extends Statement {
     this.deleteAfterLoad = LoadTsFileConfigurator.parseOrGetDefaultOnSuccess(loadAttributes);
     this.convertOnTypeMismatch =
         LoadTsFileConfigurator.parseOrGetDefaultConvertOnTypeMismatch(loadAttributes);
+    this.tabletConversionThresholdBytes =
+        LoadTsFileConfigurator.parseOrGetDefaultTabletConversionThresholdBytes(loadAttributes);
+    this.verifySchema = LoadTsFileConfigurator.parseOrGetDefaultVerify(loadAttributes);
+  }
+
+  public boolean reconstructStatementIfMiniFileConverted(final List<Boolean> isMiniTsFile) {
+    int lastNonMiniTsFileIndex = -1;
+
+    for (int i = 0, n = isMiniTsFile.size(); i < n; i++) {
+      if (isMiniTsFile.get(i)) {
+        continue;
+      }
+      ++lastNonMiniTsFileIndex;
+      if (tsFiles != null) {
+        tsFiles.set(lastNonMiniTsFileIndex, tsFiles.get(i));
+      }
+      if (isTableModel != null) {
+        isTableModel.set(lastNonMiniTsFileIndex, isTableModel.get(i));
+      }
+      if (resources != null) {
+        resources.set(lastNonMiniTsFileIndex, resources.get(i));
+      }
+      if (writePointCountList != null) {
+        writePointCountList.set(lastNonMiniTsFileIndex, writePointCountList.get(i));
+      }
+    }
+
+    tsFiles =
+        tsFiles != null ? tsFiles.subList(0, lastNonMiniTsFileIndex + 1) : Collections.emptyList();
+    isTableModel =
+        isTableModel != null
+            ? isTableModel.subList(0, lastNonMiniTsFileIndex + 1)
+            : Collections.emptyList();
+    resources =
+        resources != null
+            ? resources.subList(0, lastNonMiniTsFileIndex + 1)
+            : Collections.emptyList();
+    writePointCountList =
+        writePointCountList != null
+            ? writePointCountList.subList(0, lastNonMiniTsFileIndex + 1)
+            : Collections.emptyList();
+
+    return tsFiles == null || tsFiles.isEmpty();
   }
 
   @Override
@@ -238,6 +306,8 @@ public class LoadTsFileStatement extends Statement {
         + verifySchema
         + ", convert-on-type-mismatch="
         + convertOnTypeMismatch
+        + ", tablet-conversion-threshold="
+        + tabletConversionThresholdBytes
         + ", tsFiles size="
         + tsFiles.size()
         + '}';

@@ -279,7 +279,7 @@ public class LoadTsFileScheduler implements IScheduler {
           convertFailedTsFilesToTabletsAndRetry();
         } finally {
           LOAD_TSFILE_COST_METRICS_SET.recordPhaseTimeCost(
-              LoadTsFileCostMetricsSet.CAST_TABLETS, System.nanoTime() - startTime);
+              LoadTsFileCostMetricsSet.SCHEDULER_CAST_TABLETS, System.nanoTime() - startTime);
         }
       }
     } finally {
@@ -532,9 +532,12 @@ public class LoadTsFileScheduler implements IScheduler {
 
       try {
         final TSStatus status =
-            loadTsFileDataTypeConverter
-                .convertForTreeModel(new LoadTsFileStatement(filePath))
-                .orElse(null);
+                loadTsFileDataTypeConverter
+                    .convertForTreeModel(
+                        new LoadTsFileStatement(filePath)
+                            .setDeleteAfterLoad(failedNode.isDeleteAfterLoad())
+                            .setConvertOnTypeMismatch(true))
+                    .orElse(null);
 
         if (loadTsFileDataTypeConverter.isSuccessful(status)) {
           iterator.remove();
