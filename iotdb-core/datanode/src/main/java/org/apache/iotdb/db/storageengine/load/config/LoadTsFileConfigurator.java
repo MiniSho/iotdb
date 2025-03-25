@@ -40,7 +40,6 @@ public class LoadTsFileConfigurator {
       case ON_SUCCESS_KEY:
         validateOnSuccessParam(value);
         break;
-      case DATABASE_NAME_KEY:
       case TABLET_CONVERSION_THRESHOLD_KEY:
         break;
       case CONVERT_ON_TYPE_MISMATCH_KEY:

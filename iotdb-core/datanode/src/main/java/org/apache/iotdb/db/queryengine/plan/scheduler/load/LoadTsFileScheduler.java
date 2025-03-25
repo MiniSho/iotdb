@@ -532,12 +532,12 @@ public class LoadTsFileScheduler implements IScheduler {
 
       try {
         final TSStatus status =
-                loadTsFileDataTypeConverter
-                    .convertForTreeModel(
-                        new LoadTsFileStatement(filePath)
-                            .setDeleteAfterLoad(failedNode.isDeleteAfterLoad())
-                            .setConvertOnTypeMismatch(true))
-                    .orElse(null);
+            loadTsFileDataTypeConverter
+                .convertForTreeModel(
+                    new LoadTsFileStatement(filePath)
+                        .setDeleteAfterLoad(failedNode.isDeleteAfterLoad())
+                        .setConvertOnTypeMismatch(true))
+                .orElse(null);
 
         if (loadTsFileDataTypeConverter.isSuccessful(status)) {
           iterator.remove();
